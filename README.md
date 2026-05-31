@@ -42,7 +42,7 @@ Swagger 地址：`http://localhost:8080/swagger-ui.html`
 - `GET /api/games/{id}` 商品详情，Redis 缓存
 - `POST /api/cart` 加入购物车
 - `GET /api/cart` 查看购物车
-- `POST /api/orders` 创建订单并扣减库存
+- `POST /api/orders` 创建订单并扣减库存，支持 `idempotencyKey` 防重复提交
 - `POST /api/orders/{id}/pay` 模拟支付
 - `POST /api/orders/{id}/cancel` 取消订单并回滚库存
 - `POST /api/admin/games` 后台新增游戏，需 ADMIN JWT
@@ -57,3 +57,14 @@ Swagger 地址：`http://localhost:8080/swagger-ui.html`
 - `40` 已关闭
 
 下单时通过 MySQL 条件更新扣减库存：`stock >= quantity`，避免超卖。待支付订单超过配置的 `gamemall.order.timeout-minutes` 后，会由定时任务取消并回滚库存。
+
+## 高并发处理
+
+- 库存扣减使用单条 SQL 条件更新：`update games set stock = stock - ? where id = ? and status = 1 and stock >= ?`。
+- 订单创建先写入 `CREATING` 状态，再在同一事务内扣库存、写明细、推进到 `PENDING_PAYMENT`。
+- `orders` 表增加 `(user_id, idempotency_key)` 唯一索引，同一用户同一幂等键只会创建一笔订单。
+- 并发重复请求如果读到 `CREATING` 中间态，会短暂等待订单完成后返回最终订单，避免半成品响应。
+- 支付和取消都使用状态条件更新，只允许待支付订单流转，避免重复支付、重复取消和库存重复回滚。
+- Hikari 连接池在 `application.yml` 中配置为最大 30 连接，适合本地中小规模压测。
+
+压测记录见 [docs/performance-test.md](docs/performance-test.md)。

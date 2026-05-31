@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 public class Order {
     private Long id;
     private String orderNo;
+    private String idempotencyKey;
     private Long userId;
     private BigDecimal totalAmount;
     private Integer status;
@@ -29,6 +30,14 @@ public class Order {
 
     public void setOrderNo(String orderNo) {
         this.orderNo = orderNo;
+    }
+
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
     }
 
     public Long getUserId() {

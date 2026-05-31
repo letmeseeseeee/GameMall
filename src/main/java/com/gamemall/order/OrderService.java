@@ -6,16 +6,19 @@ import com.gamemall.common.BizException;
 import com.gamemall.game.Game;
 import com.gamemall.game.GameMapper;
 import com.gamemall.security.SecurityContext;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Service
@@ -38,9 +41,31 @@ public class OrderService {
     @Transactional
     public OrderDetail create(CreateOrderRequest request) {
         Long userId = SecurityContext.currentUserId();
+        String idempotencyKey = normalizeIdempotencyKey(request.idempotencyKey);
+        Order existing = orderMapper.findByIdempotencyKey(userId, idempotencyKey);
+        if (existing != null) {
+            Order ready = waitForExistingOrderReady(userId, idempotencyKey);
+            return new OrderDetail(ready, orderItemMapper.findByOrderId(ready.getId()));
+        }
+
         List<OrderLineRequest> lines = resolveLines(request);
         if (CollectionUtils.isEmpty(lines)) {
             throw new BizException("order items cannot be empty");
+        }
+
+        Order order = new Order();
+        order.setOrderNo(newOrderNo());
+        order.setIdempotencyKey(idempotencyKey);
+        order.setUserId(userId);
+        order.setTotalAmount(BigDecimal.ZERO);
+        order.setStatus(OrderStatus.CREATING.code());
+        order.setPaymentStatus(PaymentStatus.UNPAID.code());
+        order.setExpireAt(LocalDateTime.now().plusMinutes(timeoutMinutes));
+        try {
+            orderMapper.insert(order);
+        } catch (DuplicateKeyException e) {
+            Order duplicated = waitForExistingOrderReady(userId, idempotencyKey);
+            return new OrderDetail(duplicated, orderItemMapper.findByOrderId(duplicated.getId()));
         }
 
         List<OrderItem> items = new ArrayList<>();
@@ -64,23 +89,17 @@ public class OrderService {
             total = total.add(subtotal);
         }
 
-        Order order = new Order();
-        order.setOrderNo(newOrderNo());
-        order.setUserId(userId);
-        order.setTotalAmount(total);
-        order.setStatus(OrderStatus.PENDING_PAYMENT.code());
-        order.setPaymentStatus(PaymentStatus.UNPAID.code());
-        order.setExpireAt(LocalDateTime.now().plusMinutes(timeoutMinutes));
-        orderMapper.insert(order);
-
         for (OrderItem item : items) {
             item.setOrderId(order.getId());
             orderItemMapper.insert(item);
         }
+        if (orderMapper.markCreated(order.getId(), total) == 0) {
+            throw new BizException("order status conflict while creating");
+        }
         if (Boolean.TRUE.equals(request.fromCart)) {
             cartService.clear(userId);
         }
-        return new OrderDetail(order, items);
+        return new OrderDetail(orderMapper.findById(order.getId()), items);
     }
 
     public List<Order> list(int page, int size) {
@@ -169,5 +188,28 @@ public class OrderService {
     private String newOrderNo() {
         return "GM" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"))
                 + ThreadLocalRandom.current().nextInt(1000, 9999);
+    }
+
+    private String normalizeIdempotencyKey(String idempotencyKey) {
+        if (StringUtils.hasText(idempotencyKey)) {
+            return idempotencyKey.trim();
+        }
+        return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    private Order waitForExistingOrderReady(Long userId, String idempotencyKey) {
+        for (int i = 0; i < 25; i++) {
+            Order existing = orderMapper.findByIdempotencyKey(userId, idempotencyKey);
+            if (existing != null && !existing.getStatus().equals(OrderStatus.CREATING.code())) {
+                return existing;
+            }
+            try {
+                Thread.sleep(20L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        throw new BizException("duplicate order request is still being processed");
     }
 }

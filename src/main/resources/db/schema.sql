@@ -43,7 +43,8 @@ create table games (
     updated_at datetime not null,
     constraint fk_games_category foreign key (category_id) references categories(id),
     index idx_games_category (category_id),
-    index idx_games_status_sold (status, sold_count)
+    index idx_games_status_sold (status, sold_count),
+    index idx_games_stock_guard (id, status, stock)
 ) engine=InnoDB default charset=utf8mb4;
 
 create table cart_items (
@@ -61,15 +62,17 @@ create table cart_items (
 create table orders (
     id bigint primary key auto_increment,
     order_no varchar(40) not null unique,
+    idempotency_key varchar(64) not null,
     user_id bigint not null,
     total_amount decimal(10,2) not null,
-    status tinyint not null comment '10 pending payment, 20 paid, 30 cancelled, 40 closed',
+    status tinyint not null comment '5 creating, 10 pending payment, 20 paid, 30 cancelled, 40 closed',
     payment_status tinyint not null comment '0 unpaid, 1 paid, 2 refunded',
     paid_at datetime null,
     expire_at datetime not null,
     created_at datetime not null,
     updated_at datetime not null,
     constraint fk_orders_user foreign key (user_id) references users(id),
+    unique key uk_orders_user_idempotency (user_id, idempotency_key),
     index idx_orders_user (user_id, id),
     index idx_orders_expire (status, expire_at)
 ) engine=InnoDB default charset=utf8mb4;
