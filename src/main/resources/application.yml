@@ -1,0 +1,38 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gamemall
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/gamemall?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: root
+    password: 123456
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+
+mybatis:
+  mapper-locations: classpath*:mapper/*.xml
+  type-aliases-package: com.gamemall
+  configuration:
+    map-underscore-to-camel-case: true
+
+gamemall:
+  jwt:
+    secret: "GameMallJwtSecretKeyForDemoOnlyChangeInProduction2026"
+    expiration-minutes: 1440
+  order:
+    timeout-minutes: 30
+  cache:
+    game-detail-ttl-minutes: 30
+    hot-games-ttl-minutes: 10
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
