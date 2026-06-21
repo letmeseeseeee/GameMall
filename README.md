@@ -67,4 +67,4 @@ Swagger 地址：`http://localhost:8080/swagger-ui.html`
 - 支付和取消都使用状态条件更新，只允许待支付订单流转，避免重复支付、重复取消和库存重复回滚。
 - Hikari 连接池在 `application.yml` 中配置为最大 30 连接，适合本地中小规模压测。
 
-压测记录见 [docs/performance-test.md](docs/performance-test.md)。
+压测记录见 [docs/performance-test.md](docs/performance-test.md)，学术研究风格报告见 [docs/academic-stress-report.md](docs/academic-stress-report.md)。
