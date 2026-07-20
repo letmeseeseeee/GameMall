@@ -32,6 +32,10 @@ public class SecurityConfig {
                 .and()
                 .authorizeRequests()
                 .antMatchers(
+                        "/",
+                        "/index.html",
+                        "/favicon.ico",
+                        "/assets/**",
                         "/api/auth/**",
                         "/api/games/**",
                         "/api/categories/**",
