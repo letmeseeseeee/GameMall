@@ -2,8 +2,6 @@
 
 GameMall 是一个面向数字游戏商品交易场景的类 Steam 全栈商城项目，覆盖游戏展示、分类检索、购物车、订单创建、支付模拟、库存管理、订单状态流转和后台商品运营。项目自带响应式 Web 界面，可直接完成从商品浏览到订单支付的完整演示。
 
-![GameMall 商城界面](docs/gamemall-ui-preview.png)
-
 ## 技术栈
 
 - Spring Boot 2.7.18 / Java 17
