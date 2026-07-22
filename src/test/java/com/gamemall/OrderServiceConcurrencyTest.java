@@ -141,12 +141,12 @@ class OrderServiceConcurrencyTest {
         }
 
         @Override
-        public List<GameListItem> search(Long categoryId, String keyword, int offset, int limit) {
+        public List<GameListItem> search(Long categoryId, Long tagId, String keyword, int offset, int limit) {
             return Collections.emptyList();
         }
 
         @Override
-        public long count(Long categoryId, String keyword) {
+        public long count(Long categoryId, Long tagId, String keyword) {
             return 0;
         }
 

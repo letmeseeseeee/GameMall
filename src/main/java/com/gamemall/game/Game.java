@@ -2,10 +2,13 @@ package com.gamemall.game;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 
 public class Game {
     private Long id;
     private Long categoryId;
+    private String categoryName;
     private String title;
     private String developer;
     private String publisher;
@@ -18,6 +21,7 @@ public class Game {
     private LocalDateTime releaseDate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<GameTag> tags = Collections.emptyList();
 
     public Long getId() {
         return id;
@@ -33,6 +37,14 @@ public class Game {
 
     public void setCategoryId(Long categoryId) {
         this.categoryId = categoryId;
+    }
+
+    public String getCategoryName() {
+        return categoryName;
+    }
+
+    public void setCategoryName(String categoryName) {
+        this.categoryName = categoryName;
     }
 
     public String getTitle() {
@@ -129,5 +141,13 @@ public class Game {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public List<GameTag> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<GameTag> tags) {
+        this.tags = tags;
     }
 }

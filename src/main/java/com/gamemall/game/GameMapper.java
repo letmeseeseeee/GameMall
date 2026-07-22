@@ -9,20 +9,24 @@ public interface GameMapper {
             "select g.*, c.name category_name from games g left join categories c on g.category_id = c.id " +
             "where g.status = 1 " +
             "<if test='categoryId != null'>and g.category_id = #{categoryId} </if>" +
-            "<if test='keyword != null and keyword != \"\"'>and g.title like concat('%', #{keyword}, '%') </if>" +
+            "<if test='tagId != null'>and exists (select 1 from game_tags gt where gt.game_id = g.id and gt.tag_id = #{tagId}) </if>" +
+            "<if test='keyword != null and keyword != \"\"'>and (g.title like concat('%', #{keyword}, '%') or g.developer like concat('%', #{keyword}, '%') or g.publisher like concat('%', #{keyword}, '%')) </if>" +
             "order by g.sold_count desc, g.id desc limit #{limit} offset #{offset}" +
             "</script>")
-    List<GameListItem> search(@Param("categoryId") Long categoryId, @Param("keyword") String keyword,
+    List<GameListItem> search(@Param("categoryId") Long categoryId, @Param("tagId") Long tagId,
+                              @Param("keyword") String keyword,
                               @Param("offset") int offset, @Param("limit") int limit);
 
     @Select("<script>" +
             "select count(*) from games g where g.status = 1 " +
             "<if test='categoryId != null'>and g.category_id = #{categoryId} </if>" +
-            "<if test='keyword != null and keyword != \"\"'>and g.title like concat('%', #{keyword}, '%') </if>" +
+            "<if test='tagId != null'>and exists (select 1 from game_tags gt where gt.game_id = g.id and gt.tag_id = #{tagId}) </if>" +
+            "<if test='keyword != null and keyword != \"\"'>and (g.title like concat('%', #{keyword}, '%') or g.developer like concat('%', #{keyword}, '%') or g.publisher like concat('%', #{keyword}, '%')) </if>" +
             "</script>")
-    long count(@Param("categoryId") Long categoryId, @Param("keyword") String keyword);
+    long count(@Param("categoryId") Long categoryId, @Param("tagId") Long tagId, @Param("keyword") String keyword);
 
-    @Select("select * from games where id = #{id} and status = 1")
+    @Select("select g.*, c.name category_name from games g left join categories c on c.id = g.category_id " +
+            "where g.id = #{id} and g.status = 1")
     Game findOnlineById(@Param("id") Long id);
 
     @Select("select * from games where id = #{id}")

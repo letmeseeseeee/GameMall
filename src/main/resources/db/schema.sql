@@ -4,6 +4,8 @@ use gamemall;
 drop table if exists order_items;
 drop table if exists orders;
 drop table if exists cart_items;
+drop table if exists game_tags;
+drop table if exists tags;
 drop table if exists games;
 drop table if exists categories;
 drop table if exists users;
@@ -23,6 +25,8 @@ create table users (
 create table categories (
     id bigint primary key auto_increment,
     name varchar(64) not null unique,
+    code varchar(32) not null unique,
+    description varchar(255) not null,
     sort_order int not null default 0
 ) engine=InnoDB default charset=utf8mb4;
 
@@ -45,6 +49,23 @@ create table games (
     index idx_games_category (category_id),
     index idx_games_status_sold (status, sold_count),
     index idx_games_stock_guard (id, status, stock)
+) engine=InnoDB default charset=utf8mb4;
+
+create table tags (
+    id bigint primary key auto_increment,
+    name varchar(32) not null unique,
+    group_name varchar(32) not null,
+    sort_order int not null default 0,
+    index idx_tags_group_sort (group_name, sort_order)
+) engine=InnoDB default charset=utf8mb4;
+
+create table game_tags (
+    game_id bigint not null,
+    tag_id bigint not null,
+    primary key (game_id, tag_id),
+    constraint fk_game_tags_game foreign key (game_id) references games(id) on delete cascade,
+    constraint fk_game_tags_tag foreign key (tag_id) references tags(id) on delete cascade,
+    index idx_game_tags_tag_game (tag_id, game_id)
 ) engine=InnoDB default charset=utf8mb4;
 
 create table cart_items (

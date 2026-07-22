@@ -34,7 +34,7 @@ Swagger 地址：`http://localhost:8080/swagger-ui.html`
 
 ## Web 界面
 
-- 商城：首页主视觉、分类筛选、关键词搜索、商品列表和商品详情。
+- 商城：首页主视觉、主类型入口、细分标签联合筛选、关键词搜索、商品列表和商品详情。
 - 购物车：商品加购、数量调整、移除商品、金额汇总和订单提交。
 - 订单中心：全部、待支付、已支付、已关闭订单筛选，支持查看明细、模拟支付和取消订单。
 - 运营后台：仅管理员可见，展示商品、库存、销量和低库存指标，支持新增、编辑和下架商品。
@@ -50,7 +50,8 @@ Swagger 地址：`http://localhost:8080/swagger-ui.html`
 - `POST /api/auth/register` 用户注册
 - `POST /api/auth/login` 用户登录，返回 JWT
 - `GET /api/categories` 分类列表
-- `GET /api/games` 游戏分页检索，支持 `categoryId`、`keyword`
+- `GET /api/tags` 细分标签列表，按玩法、模式、题材和特色分组
+- `GET /api/games` 游戏分页检索，支持 `categoryId`、`tagId`、`keyword` 联合筛选
 - `GET /api/games/hot` 热门游戏，Redis 缓存
 - `GET /api/games/{id}` 商品详情，Redis 缓存
 - `POST /api/cart` 加入购物车
@@ -79,5 +80,13 @@ Swagger 地址：`http://localhost:8080/swagger-ui.html`
 - 并发重复请求如果读到 `CREATING` 中间态，会短暂等待订单完成后返回最终订单，避免半成品响应。
 - 支付和取消都使用状态条件更新，只允许待支付订单流转，避免重复支付、重复取消和库存重复回滚。
 - Hikari 连接池在 `application.yml` 中配置为最大 30 连接，适合本地中小规模压测。
+
+## 游戏分类模型
+
+- `categories` 保存每款游戏唯一的主类型，例如动作冒险、角色扮演和策略模拟。
+- `tags` 保存玩法、模式、题材和特色等细分维度。
+- `game_tags` 通过多对多关系允许一款游戏关联多个细分标签。
+- 商品查询支持 `categoryId + tagId + keyword` 联合过滤，标签关联使用组合主键并建立反向查询索引。
+- 从旧版数据库升级时执行 `src/main/resources/db/migration-v2-game-taxonomy.sql`，无需删除现有用户和订单数据。
 
 压测记录见 [docs/performance-test.md](docs/performance-test.md)，学术研究风格报告见 [docs/academic-stress-report.md](docs/academic-stress-report.md)。

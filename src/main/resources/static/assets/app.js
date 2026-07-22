@@ -2,10 +2,12 @@ const state = {
     token: localStorage.getItem("gm_token") || "",
     user: readStoredUser(),
     categories: [],
+    tags: [],
     games: [],
     cart: [],
     orders: [],
     selectedCategory: "",
+    selectedTag: "",
     keyword: "",
     orderFilter: "all",
     authMode: "login"
@@ -16,7 +18,20 @@ const GAME_ART = {
     "Dragon Ledger": "https://images.unsplash.com/photo-1578662996442-48f60103fc96?auto=format&fit=crop&w=900&q=84",
     "Colony Tactics": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=900&q=84",
     "Rain Courier": "https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=900&q=84",
-    "Turbo Apex": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=84"
+    "Turbo Apex": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=84",
+    "Steel Harbor": "https://images.unsplash.com/photo-1569701813229-33284b643e3c?auto=format&fit=crop&w=900&q=84",
+    "Echoes of Aster": "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=900&q=84",
+    "Verdant Assembly": "https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=900&q=84",
+    "Paper Moon Hotel": "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=84",
+    "Circuit Breakers": "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=900&q=84"
+};
+
+const CATEGORY_ICONS = {
+    action: "swords",
+    rpg: "scroll-text",
+    strategy: "blocks",
+    indie: "sparkles",
+    sports: "gauge"
 };
 
 const $ = (id) => document.getElementById(id);
@@ -180,11 +195,52 @@ async function loadCategories() {
         .join("");
 }
 
+async function loadTags() {
+    state.tags = await api("/api/tags");
+    renderTagFilters();
+    renderAdminTags();
+}
+
 function renderCategories() {
     const categories = [{id: "", name: "全部游戏"}, ...state.categories];
     $("categoryTabs").innerHTML = categories.map((category) => `
         <button class="category-tab ${String(category.id) === String(state.selectedCategory) ? "active" : ""}"
                 type="button" data-category-id="${category.id}">${escapeHtml(category.name)}</button>`).join("");
+    renderGenres();
+    const selected = state.categories.find((category) => String(category.id) === String(state.selectedCategory));
+    $("currentGenreTitle").textContent = selected?.name || "全部游戏";
+}
+
+function renderGenres() {
+    $("genreGrid").innerHTML = state.categories.map((category) => `
+        <button class="genre-card ${String(category.id) === String(state.selectedCategory) ? "active" : ""}" type="button" data-genre-id="${category.id}">
+            <span class="genre-icon"><i data-lucide="${CATEGORY_ICONS[category.code] || "gamepad-2"}"></i></span>
+            <span class="genre-copy"><strong>${escapeHtml(category.name)}</strong><small>${escapeHtml(category.description || "精选数字游戏")}</small></span>
+            <span class="genre-count">${category.gameCount || 0}<small>款</small></span>
+        </button>`).join("");
+    refreshIcons();
+}
+
+function renderTagFilters() {
+    const groups = state.tags.reduce((result, tag) => {
+        (result[tag.groupName] ||= []).push(tag);
+        return result;
+    }, {});
+    $("tagFilters").innerHTML = Object.entries(groups).map(([group, tags]) => `
+        <div class="tag-filter-group">
+            <b>${escapeHtml(group)}</b>
+            <div>${tags.map((tag) => `<button class="tag-filter ${String(tag.id) === String(state.selectedTag) ? "active" : ""}" type="button" data-tag-id="${tag.id}">${escapeHtml(tag.name)}</button>`).join("")}</div>
+        </div>`).join("");
+}
+
+function renderAdminTags() {
+    const groups = state.tags.reduce((result, tag) => {
+        (result[tag.groupName] ||= []).push(tag);
+        return result;
+    }, {});
+    $("adminTags").innerHTML = Object.entries(groups).map(([group, tags]) => `
+        <div class="admin-tag-group"><strong>${escapeHtml(group)}</strong><div>${tags.map((tag) => `
+            <label><input type="checkbox" name="gameTag" value="${tag.id}"><span>${escapeHtml(tag.name)}</span></label>`).join("")}</div></div>`).join("");
 }
 
 function renderGameSkeletons() {
@@ -195,19 +251,27 @@ async function loadGames() {
     renderGameSkeletons();
     const params = new URLSearchParams({page: "1", size: "50"});
     if (state.selectedCategory) params.set("categoryId", state.selectedCategory);
+    if (state.selectedTag) params.set("tagId", state.selectedTag);
     if (state.keyword) params.set("keyword", state.keyword);
     try {
         const data = await api(`/api/games?${params}`);
         state.games = data.records || [];
         $("catalogCount").textContent = `共 ${data.total || 0} 款游戏`;
-        $("activeSearch").classList.toggle("hidden", !state.keyword);
-        $("activeSearchText").textContent = state.keyword ? `搜索：${state.keyword}` : "";
+        renderActiveFilters();
         renderGames();
         renderAdmin();
     } catch (error) {
         $("gamesGrid").innerHTML = emptyState("wifi-off", "商品加载失败", error.message);
         toast(error.message, "error");
     }
+}
+
+function renderActiveFilters() {
+    const category = state.categories.find((item) => String(item.id) === String(state.selectedCategory));
+    const tag = state.tags.find((item) => String(item.id) === String(state.selectedTag));
+    const filters = [category?.name, tag?.name, state.keyword ? `“${state.keyword}”` : ""].filter(Boolean);
+    $("activeSearch").classList.toggle("hidden", !filters.length);
+    $("activeSearchText").textContent = filters.length ? `当前筛选：${filters.join(" / ")}` : "";
 }
 
 function emptyState(icon, title, description, action = "") {
@@ -229,6 +293,7 @@ function renderGames() {
             <div class="game-card-body">
                 <div class="game-title-row"><h3 title="${escapeHtml(game.title)}">${escapeHtml(game.title)}</h3><i class="stock-dot ${game.stock < 100 ? "low" : ""}" title="${game.stock > 0 ? "有库存" : "已售罄"}"></i></div>
                 <p class="game-developer">${escapeHtml(game.developer || "GameMall Studio")}</p>
+                <div class="game-tags">${(game.tags || []).slice(0, 3).map((tag) => `<span>${escapeHtml(tag.name)}</span>`).join("")}</div>
                 <div class="game-meta">
                     <span><i data-lucide="trending-up"></i> 已售 ${game.soldCount || 0}</span>
                     <span><i data-lucide="boxes"></i> 库存 ${game.stock || 0}</span>
@@ -250,11 +315,12 @@ async function openGameDetail(id) {
         $("detailContent").innerHTML = `
             <div class="detail-cover">
                 <img src="${escapeHtml(coverFor(game))}" alt="${escapeHtml(game.title)} 封面">
-                <div class="detail-heading"><span>${escapeHtml(categoryName(game.categoryId))}</span><h2 id="detailTitle">${escapeHtml(game.title)}</h2></div>
+                <div class="detail-heading"><span>${escapeHtml(game.categoryName || categoryName(game.categoryId))}</span><h2 id="detailTitle">${escapeHtml(game.title)}</h2></div>
             </div>
             <div class="detail-body">
                 <div class="detail-layout">
                     <div>
+                        <div class="detail-tags">${(game.tags || []).map((tag) => `<span>${escapeHtml(tag.name)}</span>`).join("")}</div>
                         <p class="detail-description">${escapeHtml(game.description || "这款游戏暂未添加详细介绍。")}</p>
                         <div class="detail-facts">
                             <div><span>开发商</span><strong title="${escapeHtml(game.developer || "-")}">${escapeHtml(game.developer || "-")}</strong></div>
@@ -474,7 +540,8 @@ async function cancelOrder(id) {
 function renderAdmin() {
     if (!isAdmin()) return;
     const keyword = $("adminKeyword")?.value.trim().toLowerCase() || "";
-    const rows = state.games.filter((game) => [game.title, game.developer, game.categoryName].some((value) => String(value || "").toLowerCase().includes(keyword)));
+    const rows = state.games.filter((game) => [game.title, game.developer, game.categoryName, ...(game.tags || []).map((tag) => tag.name)]
+        .some((value) => String(value || "").toLowerCase().includes(keyword)));
     const stock = state.games.reduce((sum, game) => sum + Number(game.stock || 0), 0);
     const sold = state.games.reduce((sum, game) => sum + Number(game.soldCount || 0), 0);
     $("adminGameCount").textContent = state.games.length;
@@ -522,6 +589,10 @@ async function editGame(id) {
         $("releaseDate").value = game.releaseDate ? String(game.releaseDate).slice(0, 10) : "";
         $("coverUrl").value = game.coverUrl || "";
         $("description").value = game.description || "";
+        const selectedTagIds = new Set((game.tags || []).map((tag) => String(tag.id)));
+        $("adminTags").querySelectorAll("input[name='gameTag']").forEach((input) => {
+            input.checked = selectedTagIds.has(input.value);
+        });
         $("gameFormTitle").textContent = "编辑游戏";
         openModal("gameModal");
     } catch (error) {
@@ -543,7 +614,8 @@ async function saveGame(event) {
         stock: Number($("stock").value),
         coverUrl: $("coverUrl").value.trim(),
         description: $("description").value.trim(),
-        releaseDate: date ? `${date} 00:00:00` : null
+        releaseDate: date ? `${date} 00:00:00` : null,
+        tagIds: Array.from($("adminTags").querySelectorAll("input[name='gameTag']:checked"), (input) => Number(input.value))
     };
     try {
         await api(id ? `/api/admin/games/${id}` : "/api/admin/games", {
@@ -620,6 +692,20 @@ function bindEvents() {
         renderCategories();
         loadGames();
     });
+    $("genreGrid").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-genre-id]");
+        if (!button) return;
+        state.selectedCategory = button.dataset.genreId;
+        renderCategories();
+        loadGames().then(() => $("currentGenreTitle").scrollIntoView({behavior: "smooth", block: "center"}));
+    });
+    $("tagFilters").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-tag-id]");
+        if (!button) return;
+        state.selectedTag = String(state.selectedTag) === String(button.dataset.tagId) ? "" : button.dataset.tagId;
+        renderTagFilters();
+        loadGames();
+    });
     $("gamesGrid").addEventListener("click", (event) => {
         const detail = event.target.closest("[data-game-detail]");
         const add = event.target.closest("[data-add-cart]");
@@ -632,7 +718,11 @@ function bindEvents() {
     });
     $("clearSearchBtn").addEventListener("click", () => {
         state.keyword = "";
+        state.selectedCategory = "";
+        state.selectedTag = "";
         $("headerKeyword").value = "";
+        renderCategories();
+        renderTagFilters();
         loadGames();
     });
     $("mobileSearchBtn").addEventListener("click", () => openModal("searchModal"));
@@ -678,6 +768,13 @@ function bindEvents() {
 
     $("newGameBtn").addEventListener("click", openNewGame);
     $("adminKeyword").addEventListener("input", renderAdmin);
+    $("adminTags").addEventListener("change", (event) => {
+        const selected = $("adminTags").querySelectorAll("input[name='gameTag']:checked");
+        if (selected.length > 8) {
+            event.target.checked = false;
+            toast("每款游戏最多选择 8 个细分标签", "error");
+        }
+    });
     $("adminGameRows").addEventListener("click", (event) => {
         const edit = event.target.closest("[data-admin-edit]");
         const offline = event.target.closest("[data-admin-offline]");
@@ -730,7 +827,7 @@ async function init() {
     renderOrders();
     refreshIcons();
     try {
-        await loadCategories();
+        await Promise.all([loadCategories(), loadTags()]);
         await loadGames();
         await Promise.all([loadCart(false), loadOrders(false)]);
     } catch (error) {

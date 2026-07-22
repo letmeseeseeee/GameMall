@@ -6,6 +6,8 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import javax.validation.constraints.Size;
 
 public class GameRequest {
     @NotNull
@@ -23,4 +25,6 @@ public class GameRequest {
     public String coverUrl;
     public String description;
     public LocalDateTime releaseDate;
+    @Size(max = 8)
+    public List<Long> tagIds;
 }

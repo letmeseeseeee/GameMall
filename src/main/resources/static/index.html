@@ -74,15 +74,24 @@
                     </div>
                     <p id="catalogCount">正在加载商品...</p>
                 </div>
+                <div class="genre-grid" id="genreGrid" aria-label="按游戏类型浏览"></div>
+                <div class="catalog-list-heading">
+                    <div><span>全部商品</span><strong id="currentGenreTitle">全部游戏</strong></div>
+                    <small>可叠加类型、标签与关键词筛选</small>
+                </div>
                 <div class="catalog-tools">
                     <div class="category-tabs" id="categoryTabs" aria-label="游戏分类"></div>
                     <button class="filter-button" id="mobileSearchBtn" type="button">
                         <i data-lucide="search" aria-hidden="true"></i> 搜索
                     </button>
                 </div>
+                <div class="tag-filter-row">
+                    <span>细分标签</span>
+                    <div class="tag-filters" id="tagFilters" aria-label="游戏细分标签"></div>
+                </div>
                 <div class="active-search hidden" id="activeSearch">
                     <span id="activeSearchText"></span>
-                    <button type="button" id="clearSearchBtn" aria-label="清除搜索"><i data-lucide="x" aria-hidden="true"></i></button>
+                    <button type="button" id="clearSearchBtn" aria-label="清除全部筛选"><i data-lucide="x" aria-hidden="true"></i></button>
                 </div>
                 <div class="games-grid" id="gamesGrid" aria-live="polite"></div>
             </div>
@@ -222,7 +231,7 @@
             <input type="hidden" id="gameId">
             <label>游戏名称<input id="gameTitle" required maxlength="100" placeholder="例如 Neon Ronin"></label>
             <div class="form-row">
-                <label>分类<select id="adminCategory" required></select></label>
+                <label>主类型<select id="adminCategory" required></select></label>
                 <label>售价（元）<input id="price" type="number" min="0" step="0.01" required></label>
             </div>
             <div class="form-row">
@@ -234,6 +243,10 @@
                 <label>发行日期<input id="releaseDate" type="date"></label>
             </div>
             <label>封面地址<input id="coverUrl" type="url" placeholder="https://..."></label>
+            <fieldset class="tag-fieldset">
+                <legend>细分标签 <span>最多选择 8 项</span></legend>
+                <div class="admin-tag-groups" id="adminTags"></div>
+            </fieldset>
             <label>商品简介<textarea id="description" rows="4" maxlength="1000"></textarea></label>
             <div class="form-actions">
                 <button class="button button-secondary" type="button" data-close-modal>取消</button>

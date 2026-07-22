@@ -1,6 +1,8 @@
 package com.gamemall.game;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
 
 public class GameListItem {
     public Long id;
@@ -12,4 +14,5 @@ public class GameListItem {
     public Integer stock;
     public Integer soldCount;
     public String coverUrl;
+    public List<GameTag> tags = Collections.emptyList();
 }

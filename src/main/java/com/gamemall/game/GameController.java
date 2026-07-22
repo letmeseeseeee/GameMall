@@ -22,6 +22,11 @@ public class GameController {
         return ApiResponse.ok(gameService.categories());
     }
 
+    @GetMapping("/tags")
+    public ApiResponse<List<GameTag>> tags() {
+        return ApiResponse.ok(gameService.tags());
+    }
+
     @GetMapping("/games")
     public ApiResponse<PageResult<GameListItem>> games(GameQuery query) {
         return ApiResponse.ok(gameService.search(query));
