@@ -3,3 +3,6 @@ target/
 *.iml
 *.log
 .DS_Store
+frontend/node_modules/
+frontend/dist/
+.npm-cache/

@@ -9,7 +9,8 @@ GameMall 是一个面向数字游戏商品交易场景的类 Steam 全栈商城�
 - Redis 缓存
 - Spring Security / JWT
 - Swagger OpenAPI
-- 原生 HTML / CSS / JavaScript 响应式 Web UI
+- Vue 3 / TypeScript / Vite
+- Pinia / Vue Router / Axios / Lucide Icons
 
 ## 快速启动
 
@@ -20,7 +21,18 @@ GameMall 是一个面向数字游戏商品交易场景的类 Steam 全栈商城�
    - database: `gamemall`
    - username: `root`
    - password: `123456`
-4. 启动项目：
+4. 首次开发或前端变更后，构建 Vue 应用：
+
+```bash
+cd frontend
+npm install
+npm run build
+cd ..
+```
+
+Vite 会将生产产物输出到 `src/main/resources/static`，因此交付环境不需要单独运行 Node 服务。
+
+5. 启动项目：
 
 ```bash
 mvn spring-boot:run
@@ -32,6 +44,7 @@ Swagger 地址：`http://localhost:8080/swagger-ui.html`
 
 ## Web 界面
 
+- Vue 工程位于 `frontend`，使用 TypeScript 单文件组件开发，并通过 Pinia 管理用户、商品和购物车状态。
 - 商城：首页主视觉、主类型入口、细分标签联合筛选、关键词搜索、商品列表和商品详情。
 - 购物车：商品加购、数量调整、移除商品、金额汇总和订单提交。
 - 订单中心：全部、待支付、已支付、已关闭订单筛选，支持查看明细、模拟支付和取消订单。
